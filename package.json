@@ -1,6 +1,6 @@
 {
   "name":         "ferret",
-  "description":  "Adorable bindings for mongod",
+  "description":  "Adorable mongodb bindings for node.js",
   "keywords":     ["mongodb", "database", "mongo"],
   "contributors": [
     "Marco Aurélio"

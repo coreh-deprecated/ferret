@@ -1,0 +1,20 @@
+{
+  "name":         "ferret",
+  "description":  "Adorable bindings for mongod",
+  "keywords":     ["mongodb", "database", "mongo"],
+  "contributors": [
+    "Marco Aurélio"
+  ],
+  "version":      "0.1.0",
+  "engines":      {
+    "node":       ">=0.4.9"
+  },
+  "dependencies": {
+    "mongodb":   ">=0.9.5"
+  },
+  "main" : "./ferret.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Coreh/ferret.git"
+  }
+}

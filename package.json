@@ -1,11 +1,11 @@
 {
   "name":         "ferret",
-  "description":  "Adorable mongodb bindings for node.js",
-  "keywords":     ["mongodb", "database", "mongo"],
+  "description":  "Adorable mongodb library for node.js with modelling support",
+  "keywords":     ["mongodb", "database", "mongo", "model"],
   "contributors": [
     "Marco Aurélio"
   ],
-  "version":      "0.1.0",
+  "version":      "0.2.0",
   "engines":      {
     "node":       ">=0.4.9"
   },

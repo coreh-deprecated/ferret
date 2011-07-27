@@ -20,10 +20,11 @@ var Ferret = module.exports = function(database_name, host, port) {
     this._server = new mongodb.Server(host, port, { auto_reconnect: false })
     this._db = new mongodb.Db(database_name, this._server, {})
     
-    // Initialize state variables, collection cache and ready queue
+    // Initialize state variables, collection cache, ready queue and models
     this._ready = this._error = false
     this._collections = {}
     this._readyQueue = []
+    this._models = {}
     
     // Connect
     this._db.open(function(err, db) {
@@ -133,6 +134,7 @@ Ferret.prototype.state = function() {
 
 Ferret.prototype.find = function(collection_name, query, fields, options) {
     var ee = new EventEmitter()
+    if (query === undefined) { query = {} }
     _collection(this, collection_name, function(err, collection) {
         if (err) { ee.emit('error', err) }
         else {
@@ -275,6 +277,15 @@ Ferret.prototype.collection = function(name) {
     return new FerretCollection(this, name)
 }
 
+// Model Stub
+Ferret.prototype.model = function(name, schema) {
+    // load module on first call
+    require('./model')(Ferret);
+
+    // call the proper function
+    return this.model(name, schema)
+}
+
 var sharedFerret = null
 
 // Connect to a server
@@ -332,6 +343,10 @@ Ferret.remove = function(collection_name, criteria) {
 
 Ferret.collection = function(name) {
     return new FerretCollection(_ensureSharedFerret(), name)
+}
+
+Ferret.model = function(name, schema) {
+    return _ensureSharedFerret().model(name, schema)
 }
 
 /*

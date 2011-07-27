@@ -1,10 +1,10 @@
-ferret.js - Adorable bindings for mongodb
-=========================================
+ferret.js - Adorable mongodb library for node.js
+=================================================
 
 What is ferret.js?
 ------------------
 
-`ferret.js` is a minimalistic wrapper around the excelent `node-mongodb-native` driver. It's pretty small (around 300 lines of code, without comments) and easy to use. Ferret's design is centered on:
+`ferret.js` is a minimalistic wrapper around the excelent `node-mongodb-native` driver. It's easy to use and pretty small (the core module is around 300 lines of code, without comments). Ferret's design is centered on:
 
 1. Simplicity
 2. Proper Error Handling and Recovery
@@ -20,7 +20,7 @@ Ferret is distributed under a MIT license. See the LICENSE file for more informa
 Installation
 ============
 
-`ferret.js` can be easily installed through NPM.
+`ferret.js` can be easily installed through NPM:
 
     npm install ferret
 
@@ -34,7 +34,7 @@ Sample Application/Quick Guide
 
 ### Hello World
     
-    ferret.find('users', {})
+    ferret.find('users')
     .on('each', function(user) {
         console.log(user);
     })
@@ -49,7 +49,7 @@ The `find` function returns an `util.EventEmitter` instance, to which you can at
 
 If you want to you can bind to `success` instead of `each` to get an array with all the results:
 
-    ferret.find('users', {})
+    ferret.find('users')
     .on('success', function(users) {
         for (var i = 0; i < users.length; i++) {
             console.log(users[i]);
@@ -61,7 +61,7 @@ If you want to you can bind to `success` instead of `each` to get an array with 
 
 It's probably a good idea to add some error handling to the code. This can be done by attaching a listener to the `error` event (Notice that the `on` calls are chainable):
 
-    ferret.find('users', {})
+    ferret.find('users')
     .on('success', function(users) {
         for (var i = 0; i < users.length; i++) {
             console.log(users[i]);
@@ -79,7 +79,7 @@ If nothing is specified, it will default to database `test` on server `127.0.0.1
 
     ferret.connect('test', '127.0.0.1', '27017')
     
-    ferret.find('users', {})
+    ferret.find('users')
     .on('success', function(users) {
         
         for (var i = 0; i < users.length; i++) {
@@ -104,7 +104,7 @@ If you're going to use multiple databases, you can store the return value of `fe
     var someDatabase = ferret.connect('test', '127.0.0.1', '27017')
     var otherDatabase = ferret.connect('blah', '127.0.0.1', '27017')
     
-    someDatabase.find('users', {})
+    someDatabase.find('users')
     .on('success', function(users) {
         
         for (var i = 0; i < users.length; i++) {
@@ -128,7 +128,7 @@ Notice that `find` will no longer need or take a collection name as an argument:
 
     var users = someDatabase.collection('users')
     
-    users.find({})
+    users.find()
     .on('success', function(users) {
         
         for (var i = 0; i < users.length; i++) {
@@ -155,7 +155,7 @@ It's really not necessary, but if you *really* want to, you can wait until the c
         
         var users = database.collection('users')
 
-        users.find({})
+        users.find()
         .on('success', function(users) {
             
             for (var i = 0; i < users.length; i++) {
@@ -170,6 +170,34 @@ It's really not necessary, but if you *really* want to, you can wait until the c
     })
     .on('error', function(){
         // Could not connect to mongodb
+    })
+    
+### Models
+
+Since version 0.2, ferret supports modelling:
+
+    var User = ferret.model('user', {
+        name: String,
+        age: Number,
+        email: {
+            $set: function(value) {
+                // validate email address
+            }
+        }
+    })
+    
+    User.findOne({ name: 'John' })
+    .on('success', function(user) {
+        // Happy birthday!
+        user.age++
+        
+        user.save()
+        .on('error', function(err) {
+            // Do something about it too
+        })
+    })
+    .on('error', function(err) {
+        // Do something about it
     })
 
 
@@ -186,6 +214,7 @@ Design goals
     * a shared connection object
     * manually instanced connections
     * `FerretCollection` objects
+    * `FerretModel` objects (subset of other APIs)
 
 4. **Sensible defaults** - `ferret.js` comes with sensible defaults built in so that you can get to your application logic up as quickly as possible. If you need a more tailored behavior, you can easily configure things later.
 
@@ -261,13 +290,14 @@ This section provides a quick overview of the ferret API. For detailed descripto
 ### Ferret Instance
 
 *   **Ferret#state()** - Returns the instance's current state
-*   **Ferret#find(collection_name, query[, fields[, options]])** - Find documents
+*   **Ferret#find(collection_name[, query[, fields[, options]]])** - Find documents
 *   **Ferret#findOne(collection_name, query)** - Find the first document
 *   **Ferret#insert(collection_name, docs)** - Inserts one or more documents
 *   **Ferret#save(collection_name, doc)** - Inserts if new, updates if existing
 *   **Ferret#update(collection_name, criteria, replacement[, options])** - Updates existing documents
 *   **Ferret#remove(collection_name, criteria)** - Removes existing documents
 *   **Ferret#collection(name)** - Retuns a `FerretCollection` object
+*   **Ferret#model(schema)** - Create a new model
 
 `Ferret` inherits `EventEmitter`, so it also provides all functions the latter provides.
 
@@ -282,12 +312,33 @@ For convenience, all the functions provided by `Ferret` instances are also avail
 
 `FerretCollection` objects can be obtained through the `Ferret#collection` method. They provide many of the methods the ferret instance provides, minus the `collection_name` parameter:
 
-*   **FerretCollection#find(query[, fields[, options]])** - Find documents
+*   **FerretCollection#find([query[, fields[, options]]])** - Find documents
 *   **FerretCollection#findOne(query)** - Find the first document
 *   **FerretCollection#insert(docs)** - Inserts one or more documents
 *   **FerretCollection#save(doc)** - Inserts if new, updates if existing
 *   **FerretCollection#update(criteria, replacement[, options])** - Updates existing documents
 *   **FerretCollection#remove(criteria)** - Removes existing documents
+
+### FerretModel
+
+Constructors for `FerretModel` objects can be obtained through the `Ferret#model` method. `FerretModel` provides basic modelling functionality, so you can access data on a more object oriented fashion if you want to.
+
+The API is similar to `Ferret` and `FerretCollection`, but more limited.
+
+
+#### Static methods
+
+*   **new FerretModel([data[, options]])** - Create a new model instance
+*   **FerretModel#find([query])** - Find documents and wrap them in models
+*   **FerretModel#findOne(query)** - Find the first document and wrap it in a model
+*   **FerretModel#deserialize(data)** - Create a model from serialized data. Same as `new FerretModel(data, { deserialize: true })`.
+
+#### Instance methods
+
+*   **FerretModel#save()** - Persist the model back into the database
+*   **FerretModel#remove()** - Delete the object from the database
+*   **FerretModel#serialize()** - Convert the model to a format ready for storage
+*   **FerretModel#toJSON()** - Same as `FerretModel#serialize`
 
 FAQ
 ---
@@ -298,4 +349,4 @@ Mongoose was already taken ;-)
 
 ### Does ferret provide ORM/Modelling functionality?
 
-Not yet. Stay tuned.
+Yep. With the release of version 0.2.0, ferret now provides models.

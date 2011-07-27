@@ -6,6 +6,7 @@ try {
     Object.defineProperty(String.prototype, "red", { get: function() { return this } })
     Object.defineProperty(String.prototype, "green", { get: function() { return this } })
     Object.defineProperty(String.prototype, "yellow", { get: function() { return this } })
+    Object.defineProperty(String.prototype, "blue", { get: function() { return this } })
 }
 
 var currentTest = -1

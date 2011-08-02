@@ -156,9 +156,15 @@ Ferret.prototype.model = function(name, schema) {
         
         ferret.findOne(name, query)
         .on('success', function(documentLoaded) {
+            if (documentLoaded == null) {
+                ee.emit('success', null)
+                return
+            }
             try {
                 var model = new FerretModel(documentLoaded, { deserialize: true })
-                ee.emit('success', model)
+                process.nextTick(function() {
+                    ee.emit('success', model)
+                })
             } catch (err) {
                 ee.emit('error', err)
             }
@@ -184,7 +190,10 @@ Ferret.prototype.model = function(name, schema) {
                             return;
                         }
                         try {
-                            ee.emit('each', new FerretModel(documentLoaded, { deserialize: true })) 
+                            var model = new FerretModel(documentLoaded, { deserialize: true })
+                            process.nextTick(function(){
+                                ee.emit('each', model) 
+                            })
                         } catch (err) {
                             ee.emit('error', err)
                         }

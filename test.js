@@ -10,7 +10,7 @@ try {
 }
 
 var currentTest = -1
-var start, next, tests, numErrors = 0, numSkips = 0, processErrors = 0;
+var start, next, tests, numErrors = 0, numSkips = 0, processErrors = 0, expectedSpecialErrors = 0, specialErrors = 0;
 start = next = function(err, shouldStop, skipped) {
     if (currentTest >= 0) {
         if (err) {
@@ -393,6 +393,8 @@ tests = [
                 assert(person._id !== undefined)
                 count++
             }
+            expectedSpecialErrors++
+            throw "special"
         })
         .on('error', function(err) {
             error = err
@@ -401,6 +403,7 @@ tests = [
         setTimeout(function() {
             assert(count > 0)
             assert(error == null)
+            assert(hasBeenNull == true)
 
             next()
         }, 200)
@@ -472,14 +475,35 @@ tests = [
         }, 200)
     },
     function() {
+        var TestModel = ferret.model('hello')
+        TestModel.findOne({ name: 'test123' })
+        .on('success', function(hello) {
+            assert(hello == null)
+            next()
+            expectedSpecialErrors++
+            throw "special"
+        })
+        .on('error', function(err) {
+            next(err)
+        })
+    },
+    function() {
         assert(processErrors == 0)
+        next()
+    },
+    function() {
+        assert(specialErrors == expectedSpecialErrors)
         next()
     }
 ]
 
 process.on('uncaughtException', function(err){
-    processErrors++;
-    console.error(err);
+    if (err == "special") {
+        specialErrors++
+    } else {
+        processErrors++
+        console.error(err)
+    }
 })
 
 start()

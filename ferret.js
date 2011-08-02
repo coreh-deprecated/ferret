@@ -84,6 +84,8 @@ util.inherits(Ferret, EventEmitter)
 var _ready = function(ferret, fn) {
     if (ferret._ready) {
         return fn(null)
+    } else if (ferret._error) {
+        return fn(new Error('Not connected to the database'))
     } else {
         ferret._readyQueue.push(fn)
     }

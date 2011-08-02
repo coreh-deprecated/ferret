@@ -152,6 +152,31 @@ tests = [
             next(null, false, true);
             return;
         }
+        var fakeDb = ferret.connect()
+        fakeDb.on('ready', function(){
+            next(new Error('Connection should have failed'))
+        })
+        fakeDb.on('error', function(err) {
+            if (fakeDb.state() != 'error') {
+                next(new Error('state should be \'error\''))
+            } else {
+                fakeDb.find('widget', {})
+                .on('success', function(widget) {
+                    next(new Error('Should have failed, since we\'re not connected'))
+                })
+                .on('error', function(err){
+                    next()
+                })
+                // Check if we're not queueing queries on error state
+                assert(fakeDb._readyQueue.length === 0)
+            }
+        })
+    },
+    function() {
+        if (process.argv[2] == '--skip-offline') {
+            next(null, false, true);
+            return;
+        }
         var triggered = false;
         ferret.on('reconnect', function() {
             triggered = true;
@@ -167,19 +192,6 @@ tests = [
                 next(new Error('Should have triggered a \'reconnect\' event'))
             }
         }, 15000)
-    },
-    function() {
-        var fakeDb = ferret.connect('test', '0.0.0.0', '100')
-        fakeDb.on('ready', function(){
-            next(new Error('Connection should have failed'))
-        })
-        fakeDb.on('error', function(err) {
-            if (fakeDb.state() != 'error') {
-                next(new Error('state should be \'error\''))
-            } else {
-                next()
-            }
-        })
     },
     function() {
         var testModel = ferret.model('hello')
@@ -312,6 +324,7 @@ tests = [
         
         // $load test (deserialize)
         gal = new TestModel({
+            _id: '123', // needed, since we're deserializing
             name: 'Jane',
             age: '18',
             sex: 'F',
@@ -322,7 +335,7 @@ tests = [
             }
         }, { deserialize: true })
         
-        assert(gal._id == undefined)
+        assert(gal._id == '123')
         assert(gal.name == 'Jane')
         assert(gal.age === 18)
         assert(gal.sex == 'F')
@@ -367,11 +380,19 @@ tests = [
         var TestModel = ferret.model('hello')
         var count = 0
         var error = null
+        var hasBeenNull = false;
         
         TestModel.find({})
         .on('each', function(person) {
-            assert(person instanceof TestModel)
-            count++
+            if (person == null) {
+                assert(hasBeenNull == false)
+                hasBeenNull = true;
+            } else {
+                assert(hasBeenNull == false)
+                assert(person instanceof TestModel)
+                assert(person._id !== undefined)
+                count++
+            }
         })
         .on('error', function(err) {
             error = err
@@ -380,6 +401,7 @@ tests = [
         setTimeout(function() {
             assert(count > 0)
             assert(error == null)
+
             next()
         }, 200)
     },
@@ -392,6 +414,7 @@ tests = [
         })
         test.save()
         .on('success', function() {
+            assert(test._id !== undefined)
             TestModel.find()
             .on('success', function(models) {
                 assert(models instanceof Array)
@@ -454,7 +477,7 @@ tests = [
     }
 ]
 
-process.on('error', function(err){
+process.on('uncaughtException', function(err){
     processErrors++;
     console.error(err);
 })

@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/Coreh/ferret.png)](http://travis-ci.org/Coreh/ferret)
 ferret.js - Adorable mongodb library for node.js
 =================================================
 
